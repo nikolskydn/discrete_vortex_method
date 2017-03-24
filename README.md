@@ -8,3 +8,6 @@
 ## About
 
 https://nikolskydn.github.io/discrete_vortex_method_in_2D/docs/about/index.html
+
+https://github.com/nikolskydn/discrete_vortex_method_in_2D/blob/master/docs/nikolskydn-meth-mm.pdf
+
