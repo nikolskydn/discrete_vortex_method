@@ -1,0 +1,154 @@
+\documentclass[a4paper]{report}
+\mag 1440
+% \mag1440 увеличивает в 1.45 раз
+\hoffset=6.9mm \voffset=5.0mm
+\topmargin-11.6mm \oddsidemargin-1.4mm
+\textwidth110mm \textheight166mm
+\headsep6.9mm
+
+
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{euscript}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{citehack}
+\usepackage{caption2}
+\usepackage[colorlinks,urlcolor=blue,linktocpage=true,unicode]{hyperref}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+%\usepackage{russcorr}
+
+\pagestyle{headings}
+
+\makeatletter
+% номер страницы в центре
+\renewcommand{\@oddhead}{\hfil --- \thepage \ --- \hfil}
+\makeatother
+
+% сброс счетчика после каждой секции
+\makeatletter \@addtoreset{equation}{section}
+
+
+% номер формулы 
+\renewcommand{\theequation}{\thesection.\arabic{equation}}
+
+% счётчик для ссылок на рисунки
+\newcounter{pict}[section]
+\setcounter{pict}{1}
+
+% команда для сброса счётчика рисунков
+\newcommand{\pc}{\refstepcounter{pict}{}}
+
+% номер рисунка в виде секция.номер
+\renewcommand{\thepict}{\thesection.\arabic{pict}}
+
+% заменяем для рисунков ':' после номера рисунка на '.'
+\renewcommand{\captionlabeldelim}{.}
+
+\newtheorem{theorem}{Теорема}[section]
+\newtheorem{lemma}{Лемма}[section]
+
+
+\numberwithin{algorithm}{section}
+\floatname{algorithm}{Алгоритм}
+
+% запрет переноса после символов бинарного отношения
+\relpenalty=10000
+% грубый способ избавления от длинных строк
+\sloppy
+
+\usepackage{listings}
+\lstloadlanguages{C}
+
+\lstset{extendedchars=true,
+%        commentstyle=\it,.
+%        stringstyle=\bf,.
+        language=bash,
+        belowcaptionskip=5pt}
+
+\usepackage{euscript}
+
+\graphicspath{{figure/}}
+
+\begin{document}
+
+\section{Общая постановка задачи}
+
+Эволюция границы раздела разноплотных и разновязких жидкостей $L_t$ в однородных пористых средах 
+может быть описана системой интегральных и дифференциальных уравнений~\cite{ndn2011,ndn2013}:
+\begin{equation}
+\label{maineq}
+\begin{gathered}
+g_t(\vec{r}_M,t)-2\lambda G[g_t,L_t] (\vec{r}_M,t)=2\lambda\varphi_(\vec{r}_M,t)+2\alpha\Pi(\vec{r}_M), 
+\quad \vec{r}_M \in L_t,\\
+\frac{\partial \vec{r}_M}{\partial t} = \vec{W}_0(\vec{r}_M,t) + \vec{V}_{2}[g_t,L_t] (\vec{r}_M,t), 
+\quad \vec{r}_M \in L_t, \quad t>0,\\
+r_{M} = r_0 \quad \text{при} \quad t=0.
+\end{gathered}
+\end{equation}
+Здесь 
+$G[g_t,L_t]$ и $V_{2\varepsilon}[g_t,L_t]$~--- операторы потенциала и скорости двойного слоя,
+рапределенного по границе $L_t$ с плотностью $g_t$; 
+$\varphi_0$ и $W_0$~--- потенциал и скорость невозмущенного течения;
+параметры $\lambda=\frac{\mu_2-\mu_1}{\mu_2+\mu_1}$ и $\alpha=\frac{\rho_1-\rho_2}{\rho_1+\rho_2}$ 
+характеризуют различия в вязкостях $\mu_1$,$\mu_2$ и в плотностях $\rho_1$, $\rho_2$ 
+совместно перемещающихся жидкостей;
+$\Pi$~--- потенциал массовых сил; $t$~--- время; $\vec{r}_M$~--- радиус-вектор точки $M$.
+
+Более подробную информацию см. в~\cite{ndn2011,ndn2013}.
+
+Для численного решения систем \eqref{maineq} предлагаетя библиотека \verb|libdeu2d.so| (см. \verb|lib|), 
+позволяющая  вычислять основные операторы $G$ и $V$, а так же пример ее использования (см. \verb|modelling|).
+
+Численное решение задачи можно разбить на 3 этапа:
+\begin{enumerate}
+\item заполнение матрицы ;
+\item решение СЛАУ;
+\item вычисление смещения границы.
+\end{enumerate} 
+
+Требуется, использую стандарт OpenMP~\cite{omp} распараллелить работу программ.
+
+\section{Комплекс параллельных программ для исследования плоскопараллельных процессов эволюции границы раздела разновязких жидкостей на универсальных многоядерных процессорах}
+
+Упростить основную систему уравнений \eqref{maineq} --- взять $\alpha=0$. 
+При распараллеливании этапа 2 <<Решение СЛАУ>> можно ограничиться простым методом Гаусса, полагая  $| \lambda | < 0.5$.
+
+\section{Параллельное программное обеспечение для математического моделирования плоскопараллельных процессов эфолюции границы раздела разноплотных жидкостей на универсальных многоядерных процессорах}
+
+Упростить основную систему уравнений \eqref{maineq} --- взять $\lambda=0$. При этом этап 2 
+<<Решение СЛАУ>>  не требуется.
+
+
+\section{Порядок использования}
+
+Сборка проекта в каталоге \verb|modelling|:
+\begin{enumerate}
+    \item укажите путь к библиотекe --- \verb*|export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:../lib"|;
+    \item запустите сборку --- \verb|make|.
+\end{enumerate}
+
+
+Запуск и исследования:
+\begin{enumerate}
+    \item укажите число потоков --- \verb|export OMP_NUM_THREADS=1|;
+    \item запустите программу  --- \verb|./one_boundary_diff_dens_and_visc b0|.
+\end{enumerate}
+
+
+
+\begin{thebibliography}{99}
+    \label{sec:literature}
+    \addcontentsline{toc}{section}{Список литературы}
+    \bibitem{ndn2011}
+        \url{http://www.ict.nsc.ru/jct/content/t15n1/Nikolsky_n.pdf}
+    \bibitem{ndn2013}
+        \url{https://github.com/nikolskydn/discrete_vortex_method_in_2D/blob/master/docs/nikolskydn-meth-mm.pdf}
+    \bibitem{omp} \url{http://www.openmp.org/}
+\end{thebibliography}
+
+\end{document}
+
