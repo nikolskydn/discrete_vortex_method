@@ -6,6 +6,10 @@
 
 ```cd modelling/```
 
+```make```
+
+## run
+
 ```export LD_LIBRARY_PATH="LD_LIBRARY_PATH:../lib"```
 
-```make```
+```./one_boundary_diff_dens_and_visc b0```
