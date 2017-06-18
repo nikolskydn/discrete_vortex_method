@@ -36,16 +36,17 @@ int main(int argc, char* argv[]){
     double dt = 0.01;
     const double T = 5.;
     const double lambda = 0.5;
-    const double alpha = 0.2;
     const Vector2D rM1 = Vector2D(2.5,0.0);
     const double q1 = -M_PI;
     const double T0 = 1.0;
     const double VEps = 0.1;
     const size_t max_cycle = 20;
+    ub::identity_matrix<double> I (n);
 
     ub::matrix<double> A(n,n);
     ub::vector<double> f(n);
-    ub::vector<double> g(n);
+    ub::vector<double> g(n), gp(n);
+    double err, eps = 1e-5;;
 
     for(;cycle<max_cycle&&isMove;++cycle)
     { 
@@ -68,7 +69,7 @@ int main(int argc, char* argv[]){
                 }
                 else A(i,j)=1.0;
             }
-            f(i)=2.0*lambda*phi0(rM,q1,rM1)+2.0*alpha*rM.y; 
+            f(i)=2.0*lambda*phi0(rM,q1,rM1); 
         }
         double te1 = omp_get_wtime();
         std::cout << "\t\033[33mstage 1: "
@@ -76,9 +77,34 @@ int main(int argc, char* argv[]){
                   << te1-ts1 << " sec.\033[0m";
 
         // ***********   stage 2 *****************// 
-
         double ts2 = omp_get_wtime();
-        g = boost::math::tools::solve(A,f);
+        //g = boost::math::tools::solve(A,f);
+        err = 1e+10; 
+
+        while ( err > eps )
+        {
+            #pragma omp parallel for
+            for( size_t i=0; i<n; ++i )
+                gp(i) = g(i);
+        
+            #pragma omp parallel for 
+            for( size_t i=0; i<n; ++i )
+            {
+                g(i) = f(i);
+                for( size_t j=0; j<n; ++j )
+                    g(i) += ( I(i,j)-A(i,j) ) * gp(j) ;
+            }
+            err=fabs(g(0)-gp(0));
+
+            #pragma omp parallel for reduction(max:err)
+            for( size_t i=1; i<n; ++i )
+            {
+                double tmp = fabs( g(i)-gp(i) );
+                if( tmp > err ) 
+                    err = tmp;
+            }
+        } // while
+
         double te2 = omp_get_wtime();
         std::cout << "\t\033[34mstage 2: " 
                   << std::fixed << std::showpoint<< std::setprecision(5)
